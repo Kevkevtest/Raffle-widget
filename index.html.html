@@ -1,0 +1,113 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Raffle Picker</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; padding: 1rem; }
+    button {
+      padding: 10px;
+      background: #4f46e5;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      width: 100%;
+    }
+    button:disabled { background: #a5b4fc; cursor: not-allowed; }
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    .highlight { background-color: #d1fae5; }
+    .warning { background-color: #fef3c7; }
+    h2 { margin-top: 0; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>Raffle Codes</h2>
+    <p>Codes are automatically loaded from your published Google Sheet.</p>
+    <button id="pickBtn">Pick a Winner 🎉</button>
+  </div>
+
+  <div id="countdownCard" class="card warning" style="display: none;">
+    <h2>Picking winner in...</h2>
+    <p id="countdown" style="font-size: 2rem; text-align: center;"></p>
+  </div>
+
+  <div id="winnerCard" class="card highlight" style="display: none;">
+    <h2>🏆 Winning Code:</h2>
+    <p id="winnerCode" style="font-size: 1.5rem;"></p>
+  </div>
+
+  <div id="historyCard" class="card" style="display: none;">
+    <h2>Previous Winning Codes</h2>
+    <ul id="historyList"></ul>
+  </div>
+
+  <script>
+    const SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTsjbq-JRACApyrGWDqhBT3N1m8EoDmy4zRQGkJlk8y76moox888G9-rBO8JBZORtgFMNKNesefFJ2m/pub?output=csv";
+
+    const pickBtn = document.getElementById('pickBtn');
+    const countdownEl = document.getElementById('countdown');
+    const countdownCard = document.getElementById('countdownCard');
+    const winnerCard = document.getElementById('winnerCard');
+    const winnerCodeEl = document.getElementById('winnerCode');
+    const historyCard = document.getElementById('historyCard');
+    const historyList = document.getElementById('historyList');
+
+    let codes = [];
+    let history = [];
+
+    fetch(SHEET_URL)
+      .then((response) => response.text())
+      .then((data) => {
+        const rows = data.split('\n').map(r => r.trim()).filter(Boolean);
+        codes = rows.slice(1).map(row => row.split(',')[1]).filter(Boolean);
+      })
+      .catch((error) => console.error('Error loading sheet:', error));
+
+    pickBtn.addEventListener('click', () => {
+      if (codes.length === 0) return;
+      let countdown = 3;
+      countdownEl.textContent = countdown;
+      countdownCard.style.display = 'block';
+      pickBtn.disabled = true;
+      winnerCard.style.display = 'none';
+
+      const interval = setInterval(() => {
+        countdown--;
+        countdownEl.textContent = countdown;
+        if (countdown === 0) {
+          clearInterval(interval);
+          const winner = codes[Math.floor(Math.random() * codes.length)];
+          winnerCodeEl.textContent = winner;
+          winnerCard.style.display = 'block';
+          countdownCard.style.display = 'none';
+          history.unshift(winner);
+          updateHistory();
+          pickBtn.disabled = false;
+        }
+      }, 1000);
+    });
+
+    function updateHistory() {
+      historyList.innerHTML = '';
+      history.forEach(code => {
+        const li = document.createElement('li');
+        li.textContent = code;
+        historyList.appendChild(li);
+      });
+      historyCard.style.display = 'block';
+    }
+  </script>
+
+</body>
+</html>
